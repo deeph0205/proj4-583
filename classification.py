@@ -23,14 +23,6 @@ from tqdm import tqdm
 from util import *
 from models import *
 
-def compute_class_acc(y_true, y_pred, num_classes):
-    acc_dict = {}
-    for i in range(num_classes):
-        class_mask = (y_true == i)
-        class_acc = np.mean(y_true[class_mask] == y_pred[class_mask])
-        acc_dict[i] = class_acc
-    return acc_dict
-
 def test(model, test_loader, device, criterion):
     """
     Test the model.
@@ -48,6 +40,7 @@ def test(model, test_loader, device, criterion):
     model.eval()
     test_loss = 0
     correct = 0
+    num_forms = 46 # Number of taiji forms, hardcoded :p
     with torch.no_grad():
         preds = []
         targets = []
@@ -63,8 +56,6 @@ def test(model, test_loader, device, criterion):
     test_acc = correct / len(test_loader.dataset)
     preds = np.concatenate(preds)
     targets = np.concatenate(targets)
-    test_std = np.sqrt((test_acc * (1 - test_acc)) / len(test_loader.dataset))
-        class_acc, class_std = compute_class_acc(targets, preds)
     return test_loss, test_acc, preds, targets
 
 #  Note log_interval doesn't actually log to a file but is used for printing. This can be changed if you want to log to a file.
@@ -172,10 +163,12 @@ def wallpaper_main(args):
     # Get stats 
     classes_train, overall_train_mat = get_stats(train_preds, train_targets, num_classes)
     classes_test, overall_test_mat = get_stats(test_preds, test_targets, num_classes)
-
+    overall_test_std = np.std(classes_test)
 
     print(f'\n\nTrain accuracy: {per_epoch_acc[-1]*100:.3f}')
     print(f'Test accuracy: {test_acc*100:.3f}')
+    print("Overall Standard Deviation")
+    print(overall_test_std)
 
     if not os.path.exists(os.path.join(args.save_dir, 'Wallpaper', args.test_set, 'stats')):
         os.makedirs(os.path.join(args.save_dir, 'Wallpaper', args.test_set, 'stats'))
@@ -257,8 +250,21 @@ def taiji_main(args):
     # Save overall stats
     overall_train_acc = np.mean(sub_train_acc)
     overall_test_acc = np.mean(sub_test_acc)
+    overall_test_std = np.std(sub_test_acc)
+    # Calculate the mean of each column of the 2D array
+    class_avg_acc = np.mean(sub_class_test, axis=0)
+
+    # Calculate the standard deviation of each column of the 2D array
+    class_avg_std = np.std(sub_class_test, axis=0)
+
     print(f"\n\nOverall Train Accuracy: {overall_train_acc:.3f}")
     print(f"Overall Test Accuracy: {overall_test_acc:.3f}")
+    print(f"Overall Test Standard Deviation: {overall_test_std:.3f}")
+    print("Class Average Accuracy: ")
+    print(class_avg_acc)
+    print("\nOverall Average Standard Deviation: ")
+    print(class_avg_std)
+          
 
     overall_file_name = os.path.join(args.save_dir, 'Taiji', args.fp_size, 'stats', 'overall.npz')
     np.savez(overall_file_name, sub_train_acc = sub_train_acc, sub_class_train=sub_class_train,
