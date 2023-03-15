@@ -151,7 +151,7 @@ def wallpaper_main(args):
 
     print(f"Training on {len(train_dataset)} images, testing on {len(test_dataset)} images.")
     # Initialize the model, optimizer, and loss function
-    model = CNN(input_channels=1, img_size=args.img_size, num_classes=num_classes).to(device)
+    model = CNN2(input_channels=1, img_size=args.img_size, num_classes=num_classes).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
 
