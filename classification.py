@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from tqdm import tqdm
+from sklearn.manifold import TSNE
 
 from util import *
 from models import *
@@ -119,6 +120,7 @@ def wallpaper_main(args):
     num_classes = 17
     if args.device == 'cuda':
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(device)
     else:
         device = torch.device('cpu')
 
@@ -132,9 +134,18 @@ def wallpaper_main(args):
     np.random.seed(args.seed)
 
     # TODO: Augment the training data given the transforms in the assignment description.
-    if args.aug_train:
-        raise NotImplementedError
-
+    
+    train_transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),  
+        transforms.RandomAffine(degrees=15, translate=(0.1, 0.1)),
+        transforms.Resize((args.img_size, args.img_size)), 
+        transforms.RandomRotation(degrees=360), 
+        transforms.RandomResizedCrop(args.img_size, scale=(1.0, 2.0)), 
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ])
 
     # Compose the transforms that will be applied to the images. Feel free to adjust this.
     transform = transforms.Compose([
@@ -143,7 +154,7 @@ def wallpaper_main(args):
         transforms.ToTensor(),
         transforms.Normalize((0.5, ), (0.5, )),
     ])
-    train_dataset = ImageFolder(os.path.join(data_root, 'train'), transform=transform)
+    train_dataset = ImageFolder(os.path.join(data_root, 'train'), transform=train_transform)
     test_dataset = ImageFolder(os.path.join(data_root, args.test_set), transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
@@ -180,6 +191,7 @@ def wallpaper_main(args):
                 test_loss=test_loss, test_acc=test_acc)
 
     # Note: The code does not save the model but you may do so if you choose with the args.save_model flag.
+    #torch.save(model.state_dict(), 'model.pth')
 
 def taiji_main(args):
     """
@@ -284,4 +296,3 @@ if __name__ == '__main__':
             taiji_main(args)
         visualize(args, dataset='Taiji')
         plot_training_curve(args)
-

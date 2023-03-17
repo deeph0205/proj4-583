@@ -85,35 +85,30 @@ class CNN2(nn.Module):
             num_classes (int): number of classes in the dataset
         """
         super(CNN2, self).__init__()
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(input_channels, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
+        self.input_channels = input_channels
+        self.num_classes = num_classes
+        self.img_size = img_size
+        self.conv_layers= nn.Sequential(
+            nn.Conv2d(self.input_channels, 32, kernel_size=3, padding=1),
+            nn.ReLU(), 
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.ReLU(),
         )
-        
-        self.fc_layers = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(256 * (img_size // 8) * (img_size // 8), 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(512, num_classes),
-        )
-        
+        self.fc_1 = nn.Linear(256 * (self.img_size // 16) * (self.img_size // 16), 1024)
+        self.fc_2 = nn.Linear(1024, self.num_classes)
+
     def forward(self, x):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)
-        x = self.fc_layers(x)
-        return x
+        x = self.fc_1(x)
+        x = self.fc_2(x)
+        return F.log_softmax(x, dim=1)
